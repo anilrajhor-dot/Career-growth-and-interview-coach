@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Career Growth & Interview Coach</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--ink:#1c2333;--mut:#6b7385;--line:#e3e6ee;--acc:#2f5bea;--acc2:#e8eeff;--ok:#12805c;--okbg:#e4f6ee;--warn:#a65b00;--warnbg:#fff3e0;--bad:#b3261e;--badbg:#fdeceb}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;padding-bottom:60px}
+header{background:linear-gradient(135deg,#1d2b64,#2f5bea);color:#fff;padding:18px 16px 14px;padding-top:max(18px,env(safe-area-inset-top))}
+header h1{margin:0;font-size:20px}
+header p{margin:4px 0 0;font-size:13px;opacity:.85}
+nav{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch}
+nav button{flex:0 0 auto;border:0;background:none;padding:12px 14px;font:inherit;font-size:14px;color:var(--mut);border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+nav button.on{color:var(--acc);border-bottom-color:var(--acc);font-weight:600}
+main{max-width:860px;margin:0 auto;padding:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+.card h2{margin:0 0 4px;font-size:17px}
+.card h3{margin:14px 0 6px;font-size:14px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+.sub{color:var(--mut);font-size:13px;margin:0 0 10px}
+label{display:block;font-size:13px;font-weight:600;margin:10px 0 4px}
+input,textarea,select{width:100%;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+textarea{resize:vertical;min-height:84px}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--acc2);border-color:var(--acc)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:560px){.row{grid-template-columns:1fr}}
+.btn{display:inline-block;border:0;background:var(--acc);color:#fff;font:inherit;font-weight:600;padding:10px 16px;border-radius:8px;cursor:pointer;margin:10px 8px 0 0}
+.btn.sec{background:var(--acc2);color:var(--acc)}
+.btn.red{background:var(--badbg);color:var(--bad)}
+.btn.sm{padding:6px 10px;font-size:13px;margin:6px 6px 0 0}
+.chip{display:inline-block;padding:3px 10px;border-radius:99px;font-size:13px;margin:3px 4px 3px 0;border:1px solid transparent}
+.chip.ok{background:var(--okbg);color:var(--ok)}
+.chip.gap{background:var(--warnbg);color:var(--warn)}
+.note{padding:10px 12px;border-radius:8px;font-size:13px;margin:10px 0}
+.note.warn{background:var(--warnbg);color:var(--warn)}
+.note.ok{background:var(--okbg);color:var(--ok)}
+.note.bad{background:var(--badbg);color:var(--bad)}
+.note.info{background:var(--acc2);color:#243b8f}
+.out{white-space:pre-wrap;background:#fafbfe;border:1px dashed #c9d1ea;border-radius:8px;padding:10px 12px;margin-top:8px;font-size:14px}
+.bar{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin:8px 0}
+.bar i{display:block;height:100%;background:var(--acc)}
+.item{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:10px}
+.item .meta{font-size:12px;color:var(--mut)}
+ul.flags{margin:6px 0 0;padding-left:18px;font-size:13px;color:var(--warn)}
+ul.flags.good{color:var(--ok)}
+.stat{display:inline-block;margin-right:16px;font-size:13px;color:var(--mut)}
+.stat b{color:var(--ink);font-size:16px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1c2333;color:#fff;padding:9px 16px;border-radius:99px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
+#toast.on{opacity:1}
+.q{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line)}
+.q input{width:auto;margin-top:4px}
+.q:last-child{border-bottom:0}
+</style>
+</head>
+<body>
+<header>
+  <h1>Career Growth &amp; Interview Coach</h1>
+  <p>Resume, LinkedIn and interview prep built only from your real experience. Works offline. Data stays on this device.</p>
+</header>
+<nav id="tabs"></nav>
+<main id="view"></main>
+<div id="toast"></div>
+
+<script>
+/* ============ STATE ============ */
+const KEY = 'career_growth_coach_v1';
+const blank = () => ({
+  tab: 'profile',
+  profile: { name: '', role: '', years: '', target: '', skills: '', interview: '' },
+  jobTitle: '', company: '', jd: '',
+  draft: { id: '', verb: '', what: '', result: '' },
+  ach: [],
+  li: { strength: '', looking: '', cta: '', picks: [] },
+  star: { q: '', pre: '', s: '', t: '', a: '', r: '' },
+  answers: [],
+  fb: { text: '' },
+  asks: [],
+  ai: { key: '', mode: 'Analyze job description', input: '', out: '' }
+});
+let S = load();
+function load() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(KEY));
+    if (raw) return Object.assign(blank(), raw);
+  } catch (e) {}
+  return blank();
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+/* ============ HELPERS ============ */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+const words = s => (s.trim().match(/\S+/g) || []);
+function getPath(p) { return p.split('.').reduce((o, k) => o[k], S); }
+function setPath(p, v) { const a = p.split('.'); let o = S; for (let i = 0; i < a.length - 1; i++) o = o[a[i]]; o[a[a.length - 1]] = v; save(); }
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('on'), 1800); }
+function copyText(txt) {
+  const done = () => toast('Copied');
+  if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(txt).then(done, fallback); } else fallback();
+  function fallback() {
+    const ta = document.createElement('textarea'); ta.value = txt; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    try { document.execCommand('copy'); done(); } catch (e) { toast('Copy failed - select and copy manually'); }
+    document.body.removeChild(ta);
+  }
+}
+const inp = (path, label, ph, type = 'text', extra = '') => `<label>${label}</label><input type="${type}" data-k="${path}" value="${esc(getPath(path))}" placeholder="${esc(ph || '')}" ${extra}>`;
+const ta = (path, label, ph, rows = 3) => `<label>${label}</label><textarea rows="${rows}" data-k="${path}" placeholder="${esc(ph || '')}">${esc(getPath(path))}</textarea>`;
+const copyBtn = (id, label = 'Copy') => `<button class="btn sec sm" data-act="copy" data-id="${id}">${label}</button>`;
+
+/* ============ NLP-LITE ============ */
+const STOP = new Set(("a an the and or of to in for on with as at by from is are be been being this that these those it its you your we our they their will can may must should would could able including include etc such per via into over under more most other any all each both than then also not no yes who what which when where how why have has had do does done within across using use used new strong preferred required requirements responsibilities responsibility role roles job position candidate candidates team teams work working experience experienced years year ability skills skill knowledge understanding looking join company opportunity ideal good great excellent plus well least minimum while about up out ensure ensuring support supporting related relevant etc. high level based key").split(' '));
+function tokens(text) {
+  return text.toLowerCase().replace(/[^a-z0-9+#.\/&\s-]/g, ' ').split(/\s+/)
+    .map(w => w.replace(/^[.\-\/]+|[.\-\/]+$/g, '')).filter(Boolean);
+}
+function extractKeywords(text, limit = 30) {
+  const toks = tokens(text), uni = {}, bi = {};
+  toks.forEach(w => { if (w.length > 2 && !STOP.has(w) && !/^\d+$/.test(w)) uni[w] = (uni[w] || 0) + 1; });
+  for (let i = 0; i < toks.length - 1; i++) {
+    const a = toks[i], b = toks[i + 1];
+    if (a.length > 2 && b.length > 2 && !STOP.has(a) && !STOP.has(b) && !/^\d+$/.test(a) && !/^\d+$/.test(b)) { const k = a + ' ' + b; bi[k] = (bi[k] || 0) + 1; }
+  }
+  const list = [];
+  Object.entries(bi).forEach(([k, c]) => { if (c >= 2) list.push({ k, c: c + 0.5 }); });
+  Object.entries(uni).forEach(([k, c]) => list.push({ k, c }));
+  list.sort((x, y) => y.c - x.c);
+  return list.slice(0, limit).map(x => x.k);
+}
+function profileCorpus() {
+  const p = S.profile;
+  return (p.role + ' ' + p.target + ' ' + p.skills + ' ' + S.ach.map(a => a.verb + ' ' + a.what + ' ' + a.result).join(' ')).toLowerCase();
+}
+function kwIn(kw, text) {
+  const t = text.toLowerCase();
+  if (kw.indexOf(' ') > -1) return t.indexOf(kw) > -1 || kw.split(' ').every(w => new RegExp('\\b' + w.replace(/[.+*?^${}()|[\]\\]/g, '\\$&') + '\\b').test(t));
+  return new RegExp('(^|[^a-z0-9])' + kw.replace(/[.+*?^${}()|[\]\\]/g, '\\$&') + '([^a-z0-9]|$)').test(t);
+}
+function analyze() {
+  if (!S.jd.trim()) return null;
+  const kws = extractKeywords(S.jd), corp = profileCorpus();
+  const matched = kws.filter(k => kwIn(k, corp)), gaps = kws.filter(k => !kwIn(k, corp));
+  const ym = [...S.jd.matchAll(/(\d{1,2})\s*\+?\s*(?:-\s*\d{1,2}\s*)?years?/gi)].map(m => parseInt(m[1], 10));
+  return { kws, matched, gaps, yearsReq: ym.length ? Math.max(...ym) : null };
+}
+
+const STRONG = ['Led', 'Built', 'Designed', 'Reduced', 'Increased', 'Launched', 'Streamlined', 'Negotiated', 'Delivered', 'Automated', 'Managed', 'Mentored', 'Improved', 'Implemented', 'Analyzed', 'Developed', 'Scaled', 'Saved', 'Generated', 'Standardized', 'Trained', 'Resolved', 'Initiated', 'Optimized', 'Coordinated', 'Established', 'Drove', 'Oversaw', 'Sanctioned', 'Appraised'];
+const WEAK = ['responsible', 'helped', 'worked', 'assisted', 'involved', 'handled', 'tasked', 'duties', 'participated', 'tried'];
+function bulletText(a) {
+  const what = a.what.trim().replace(/[.\s]+$/, ''), res = a.result.trim().replace(/[.\s]+$/, '');
+  return `${cap(a.verb.trim())} ${what}${res ? ', ' + res : ''}.`;
+}
+function bulletFlags(a) {
+  const f = [], t = bulletText(a);
+  if (!a.verb.trim()) f.push('Add an action verb.');
+  else if (WEAK.includes(a.verb.trim().toLowerCase())) f.push('"' + a.verb + '" is a weak opener. Use a stronger verb (Led, Built, Reduced...).');
+  if (!a.what.trim()) f.push('Say what you did.');
+  if (!a.result.trim()) f.push('Add the result or outcome.');
+  if (!/\d/.test(a.what + ' ' + a.result)) f.push('No number yet. Add a figure you can stand behind: %, amount, count, time saved or team size. If you do not have one, leave it out rather than estimate.');
+  if (words(t).length > 30) f.push('Over 30 words. Tighten it to one line or two.');
+  return f;
+}
+
+/* ============ TABS ============ */
+const TABS = [['profile', 'About Me'], ['analyze', 'Target Role'], ['bullets', 'Resume Bullets'], ['linkedin', 'LinkedIn'], ['star', 'STAR Answers'], ['feedback', 'Answer Feedback'], ['ask', 'Questions to Ask'], ['ai', 'AI Coach'], ['data', 'Data']];
+function renderTabs() {
+  $('#tabs').innerHTML = TABS.map(([k, l]) => `<button class="${S.tab === k ? 'on' : ''}" data-act="tab" data-id="${k}">${l}</button>`).join('');
+}
+function render() {
+  renderTabs();
+  const v = { profile, analyzeView, bullets, linkedin, star, feedback, ask, aiView, data }[S.tab === 'analyze' ? 'analyzeView' : S.tab === 'ai' ? 'aiView' : S.tab];
+  $('#view').innerHTML = v();
+  if (S.tab === 'star') updateStar();
+}
+
+/* ---- ABOUT ME ---- */
+function profile() {
+  const p = S.profile, keys = ['name', 'role', 'years', 'target', 'skills', 'interview'];
+  const filled = keys.filter(k => String(p[k]).trim()).length;
+  const miss = { name: 'Full name', role: 'Current role', years: 'Years of experience', target: 'Target role / industry', skills: 'Key skills', interview: 'Interview type' };
+  const missing = keys.filter(k => !String(p[k]).trim()).map(k => miss[k]);
+  return `<div class="card"><h2>About Me</h2>
+  <p class="sub">Every field starts blank. Fill in what applies to you now and update it whenever your goal changes. Everything else in this app is built from these fields and your Achievement Bank.</p>
+  <div class="bar"><i id="meter" style="width:${filled / 6 * 100}%"></i></div>
+  <div id="meterTxt" class="sub">${filled} of 6 filled</div>
+  <div class="row">${inp('profile.name', 'My name is', 'Your full name')}${inp('profile.role', 'My current role is', 'Your current job title')}</div>
+  <div class="row">${inp('profile.years', 'Years of experience', 'e.g. 5')}${inp('profile.target', 'Target role / industry', 'e.g. Product Manager in fintech')}</div>
+  ${ta('profile.skills', 'My key skills (4-6, comma separated)', 'e.g. credit appraisal, stakeholder management, SQL', 2)}
+  <label>Interview type I am preparing for</label>
+  <select data-k="profile.interview"><option value="">Select...</option>${['Behavioral', 'Technical', 'Case study', 'Panel', 'Mixed / not sure'].map(o => `<option ${p.interview === o ? 'selected' : ''}>${o}</option>`).join('')}</select>
+  <div id="missingNote">${missing.length ? `<div class="note warn">Still needed for strong output: ${missing.join(', ')}.</div>` : `<div class="note ok">Profile complete.</div>`}</div>
+  <div class="note info"><b>Honesty rule:</b> this app never invents projects, titles or metrics. Anything it cannot build from your input is flagged as "needs more detail".</div></div>`;
+}
+function updateProfileMeter() {
+  const keys = ['name', 'role', 'years', 'target', 'skills', 'interview'];
+  const filled = keys.filter(k => String(S.profile[k]).trim()).length;
+  const m = $('#meter'); if (!m) return;
+  m.style.width = (filled / 6 * 100) + '%'; $('#meterTxt').textContent = filled + ' of 6 filled';
+  const miss = { name: 'Full name', role: 'Current role', years: 'Years of experience', target: 'Target role / industry', skills: 'Key skills', interview: 'Interview type' };
+  const missing = keys.filter(k => !String(S.profile[k]).trim()).map(k => miss[k]);
+  $('#missingNote').innerHTML = missing.length ? `<div class="note warn">Still needed for strong output: ${missing.join(', ')}.</div>` : `<div class="note ok">Profile complete.</div>`;
+}
+
+/* ---- TARGET ROLE ---- */
+function analyzeView() {
+  const r = analyze(), py = parseFloat(S.profile.years);
+  let out = '';
+  if (r) {
+    out = `<div class="card"><h2>Keyword &amp; gap analysis</h2>
+    <h3>Already in your background (${r.matched.length})</h3>${r.matched.map(k => `<span class="chip ok">${esc(k)}</span>`).join('') || '<span class="sub">None matched yet. Add skills in About Me and achievements in Resume Bullets.</span>'}
+    <h3>Not yet shown in your materials (${r.gaps.length})</h3>${r.gaps.map(k => `<span class="chip gap">${esc(k)}</span>`).join('') || '<span class="sub">No gaps found.</span>'}
+    <div class="note warn">Add a gap keyword only if it is true for you. If it is, capture the real example in the Achievement Bank so the keyword has evidence behind it. If it is not, treat it as a gap to address in your interview prep.</div>
+    ${r.yearsReq ? `<div class="note ${py >= r.yearsReq ? 'ok' : 'warn'}">The posting mentions ${r.yearsReq}+ years. ${isNaN(py) ? 'Enter your years of experience in About Me to compare.' : py >= r.yearsReq ? 'Your ' + py + ' years meets that.' : 'You have ' + py + '. Lead with the impact of your most relevant work to bridge that.'}</div>` : ''}
+    </div>`;
+  }
+  return `<div class="card"><h2>Target role</h2><p class="sub">Paste a job description. Keywords are pulled out and checked against your skills and achievements.</p>
+  <div class="row">${inp('jobTitle', 'Job title', 'Optional')}${inp('company', 'Company', 'Optional')}</div>
+  ${ta('jd', 'Job description', 'Paste the full job description here', 9)}
+  <button class="btn" data-act="analyze">Analyze</button><button class="btn red" data-act="clearjd">Clear</button></div>${out}`;
+}
+
+/* ---- RESUME BULLETS ---- */
+function bullets() {
+  const d = S.draft, r = analyze(), kws = r ? r.kws : [];
+  const tmp = { verb: d.verb, what: d.what, result: d.result };
+  const live = (d.verb || d.what || d.result) ? `<h3>Preview</h3><div class="out" id="bprev">${esc(bulletText(tmp))}</div><ul class="flags" id="bflags">${bulletFlags(tmp).map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '<div id="bprev"></div><ul id="bflags"></ul>';
+  const ranked = S.ach.map(a => { const t = bulletText(a); return { a, t, hits: kws.filter(k => kwIn(k, t)) }; }).sort((x, y) => y.hits.length - x.hits.length);
+  return `<div class="card"><h2>Achievement Bank &amp; Resume Bullets</h2>
+  <p class="sub">Format: action verb + what you did + measurable result. Add only things that really happened.</p>
+  <datalist id="verbs">${STRONG.map(v => `<option value="${v}">`).join('')}</datalist>
+  <label>Action verb</label><input list="verbs" data-k="draft.verb" data-live="b" value="${esc(d.verb)}" placeholder="e.g. Reduced">
+  ${ta('draft.what', 'What you did', 'e.g. loan processing turnaround for MSME proposals by redesigning the checklist', 2).replace('<textarea', '<textarea data-live="b"')}
+  ${ta('draft.result', 'Measurable result', 'e.g. cutting average processing time from 12 days to 7', 2).replace('<textarea', '<textarea data-live="b"')}
+  ${live}
+  <button class="btn" data-act="saveAch">${d.id ? 'Update bullet' : 'Add to bank'}</button>${d.id ? '<button class="btn sec" data-act="cancelEdit">Cancel edit</button>' : ''}</div>
+  <div class="card"><h2>Your bullets ${r ? '(ranked by match to the target role)' : ''}</h2>
+  ${!r ? '<p class="sub">Analyze a job description in Target Role to rank bullets by relevance.</p>' : ''}
+  ${ranked.length ? ranked.map(({ a, t, hits }) => { const fl = bulletFlags(a); return `<div class="item"><div id="b_${a.id}">${esc(t)}</div>
+    ${r ? `<div class="meta">${hits.length ? 'Role keywords hit: ' + hits.map(esc).join(', ') : 'No role keywords in this bullet. Include it only if it is still relevant.'}</div>` : ''}
+    ${fl.length ? `<ul class="flags">${fl.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '<ul class="flags good"><li>Looks strong.</li></ul>'}
+    ${copyBtn('b_' + a.id)}<button class="btn sec sm" data-act="editAch" data-id="${a.id}">Edit</button><button class="btn red sm" data-act="delAch" data-id="${a.id}">Delete</button></div>`; }).join('') : '<p class="sub">No bullets yet. Add your first one above.</p>'}
+  ${ranked.length ? `<h3>Copy all (ranked)</h3><div class="out" id="allb">${esc(ranked.map(x => '• ' + x.t).join('\n'))}</div>${copyBtn('allb', 'Copy all bullets')}` : ''}</div>`;
+}
+
+/* ---- LINKEDIN ---- */
+function linkedin() {
+  const p = S.profile, L = S.li;
+  const picks = S.ach.filter(a => L.picks.includes(a.id));
+  const skills = p.skills.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+  const parts = [], need = [];
+  const intro = [];
+  if (p.role) intro.push(p.role); else need.push('current role');
+  if (p.years) intro.push(p.years + ' years of experience'); else need.push('years of experience');
+  let first = intro.join(' with ');
+  if (skills.length) first += (first ? ' in ' : '') + skills.slice(0, 4).join(', ');
+  if (first) parts.push(first.replace(/\s+$/, '') + '.' + (L.strength.trim() ? ' ' + L.strength.trim() : ''));
+  else if (L.strength.trim()) parts.push(L.strength.trim());
+  if (!L.strength.trim()) need.push('a line on what you are known for');
+  if (picks.length) parts.push('Selected impact:\n' + picks.map(a => '• ' + bulletText(a)).join('\n')); else need.push('1-3 achievements picked below');
+  if (p.target || L.looking.trim()) parts.push('Focus: ' + (L.looking.trim() || ('Moving toward ' + p.target + '.'))); else need.push('your target role');
+  if (L.cta.trim()) parts.push(L.cta.trim());
+  if (skills.length) parts.push('Core skills: ' + skills.join(' | '));
+  const text = parts.join('\n\n');
+  const r = analyze(); const hit = r ? r.matched.filter(k => kwIn(k, text)) : [];
+  return `<div class="card"><h2>LinkedIn "About" summary</h2><p class="sub">Built from About Me plus the achievements you pick. Edit the lines below to put it in your voice.</p>
+  ${ta('li.strength', 'What you are known for (one or two sentences, in your words)', '', 2).replace('<textarea', '<textarea data-live="li"')}
+  ${ta('li.looking', 'What you are looking for next (optional; defaults to your target role)', '', 2).replace('<textarea', '<textarea data-live="li"')}
+  ${ta('li.cta', 'Closing line (optional)', 'e.g. Open to conversations about ...', 2).replace('<textarea', '<textarea data-live="li"')}
+  <h3>Pick achievements to feature (1-3)</h3>
+  ${S.ach.length ? S.ach.map(a => `<div class="q"><input type="checkbox" data-act="pick" data-id="${a.id}" ${L.picks.includes(a.id) ? 'checked' : ''}><div>${esc(bulletText(a))}</div></div>`).join('') : '<p class="sub">Add bullets in Resume Bullets first.</p>'}</div>
+  <div class="card"><h2>Draft</h2>
+  ${need.length ? `<div class="note warn">Needs more detail: ${need.join('; ')}.</div>` : ''}
+  <div class="out" id="liout">${esc(text) || 'Your draft appears here as you fill in the fields.'}</div>
+  <span class="stat"><b id="licount">${text.length}</b> / 2,600 characters</span>
+  ${text.length > 2600 ? '<div class="note bad">Over LinkedIn\'s 2,600-character limit. Trim it.</div>' : ''}
+  <div class="note info">Only the first ~300 characters show before "see more", so keep the strongest line first.${hit.length ? ' Role keywords included: ' + hit.map(esc).join(', ') + '.' : ''}</div>
+  ${copyBtn('liout', 'Copy summary')}</div>`;
+}
+
+/* ---- STAR ---- */
+const BQ = ['Tell me about a time you led a project under a tight deadline.', 'Describe a conflict with a colleague or stakeholder and how you handled it.', 'Tell me about a time you failed and what you learned.', 'Give an example of a decision you made with incomplete information.', 'Describe a time you improved a process.', 'Tell me about a time you influenced someone without authority.', 'Describe your biggest professional achievement.', 'Tell me about a time you handled a difficult client or customer.', 'Give an example of when you mentored or developed someone.', 'Tell me about a time you had to learn something quickly.', 'Describe a time you managed competing priorities.', 'Tell me about a time you took initiative beyond your role.'];
+function star() {
+  const T = S.star;
+  return `<div class="card"><h2>STAR answer builder</h2><p class="sub">Target: 60-90 seconds spoken, about 130-195 words. Use only what actually happened.</p>
+  <label>Question</label><select data-k="star.q"><option value="">Choose a common question or type your own below</option>${BQ.map(q => `<option ${T.q === q ? 'selected' : ''}>${esc(q)}</option>`).join('')}</select>
+  ${inp('star.q', '', 'Or type the question here').replace('<label></label>', '')}
+  <label>Start from an achievement in your bank (optional)</label>
+  <select data-k="star.pre"><option value="">Select...</option>${S.ach.map(a => `<option value="${a.id}" ${T.pre === a.id ? 'selected' : ''}>${esc(bulletText(a).slice(0, 80))}</option>`).join('')}</select>
+  <button class="btn sec sm" data-act="prefill">Fill Action and Result from it</button>
+  ${ta('star.s', 'S - Situation (context, briefly)', '', 2).replace('<textarea', '<textarea data-live="star"')}
+  ${ta('star.t', 'T - Task (your responsibility or goal)', '', 2).replace('<textarea', '<textarea data-live="star"')}
+  ${ta('star.a', 'A - Action (what YOU did, step by step)', '', 4).replace('<textarea', '<textarea data-live="star"')}
+  ${ta('star.r', 'R - Result (outcome with numbers)', '', 3).replace('<textarea', '<textarea data-live="star"')}</div>
+  <div class="card"><h2>Your answer</h2><div id="starout"></div></div>
+  <div class="card"><h2>Saved answers</h2>${S.answers.length ? S.answers.map(a => `<div class="item"><b>${esc(a.q || 'Untitled question')}</b><div class="meta">${a.words} words, about ${a.sec}s</div>
+  <button class="btn sec sm" data-act="loadAns" data-id="${a.id}">Load</button><button class="btn red sm" data-act="delAns" data-id="${a.id}">Delete</button></div>`).join('') : '<p class="sub">Nothing saved yet.</p>'}</div>`;
+}
+function starAnalysis() {
+  const T = S.star, full = [T.s, T.t, T.a, T.r].map(x => x.trim()).filter(Boolean).join(' ');
+  const wc = words(full).length, sec = Math.round(wc / 130 * 60);
+  const w = { s: words(T.s).length, t: words(T.t).length, a: words(T.a).length, r: words(T.r).length };
+  const flags = [], good = [];
+  const missing = ['s', 't', 'a', 'r'].filter(k => !T[k].trim());
+  if (missing.length) flags.push('Needs more detail: ' + missing.map(k => ({ s: 'Situation', t: 'Task', a: 'Action', r: 'Result' }[k])).join(', ') + '.');
+  if (wc && sec < 60) flags.push('Under 60 seconds. Add specifics to the Action and Result.');
+  else if (sec > 90) flags.push('Over 90 seconds. Trim the set-up first, then repeated detail.');
+  else if (wc) good.push('Length is in the 60-90 second range.');
+  if (wc && (w.s + w.t) / wc > 0.35) flags.push('Set-up (Situation + Task) is over a third of the answer. Interviewers want to hear Action and Result.');
+  if (T.r.trim() && !/\d/.test(T.r)) flags.push('Result has no number. Add a figure you can verify, or state the concrete outcome plainly.');
+  else if (/\d/.test(T.r)) good.push('Result is quantified.');
+  if (T.a.trim()) {
+    const I = (T.a.match(/\bI\b|\bmy\b/gi) || []).length, we = (T.a.match(/\bwe\b|\bour\b/gi) || []).length;
+    if (we > I) flags.push('Action says "we" more than "I". Make your own contribution clear.');
+    else if (I) good.push('Your personal role is clear in the Action.');
+  }
+  return { full, wc, sec, flags, good };
+}
+function updateStar() {
+  const el = $('#starout'); if (!el) return;
+  const a = starAnalysis();
+  el.innerHTML = `<div class="out" id="starText">${esc(a.full) || 'Your assembled answer appears here.'}</div>
+  <div style="margin-top:8px"><span class="stat"><b>${a.wc}</b> words</span><span class="stat"><b>${a.sec}s</b> spoken</span></div>
+  ${a.flags.length ? `<ul class="flags">${a.flags.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}${a.good.length ? `<ul class="flags good">${a.good.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+  ${copyBtn('starText', 'Copy answer')}<button class="btn sec sm" data-act="saveAns">Save answer</button><button class="btn red sm" data-act="clearStar">Clear form</button>`;
+}
+
+/* ---- FEEDBACK ---- */
+const FILLER = ['um', 'uh', 'basically', 'actually', 'you know', 'kind of', 'sort of', 'i guess', 'like', 'just', 'very', 'really', 'stuff', 'things', 'maybe', 'probably'];
+function feedback() {
+  const t = S.fb.text, r = t.trim() ? fbAnalyze(t) : null;
+  return `<div class="card"><h2>Answer feedback</h2><p class="sub">Paste a draft interview answer. You get what to cut, sharpen and quantify.</p>
+  ${ta('fb.text', 'Draft answer', '', 8)}<button class="btn" data-act="runFb">Review my answer</button></div>
+  ${r ? `<div class="card"><h2>Feedback</h2><span class="stat"><b>${r.wc}</b> words</span><span class="stat"><b>${r.sec}s</b> spoken</span>
+  ${[['Cut', r.cut], ['Sharpen', r.sharpen], ['Quantify', r.quant]].map(([h, l]) => `<h3>${h}</h3>${l.length ? `<ul class="flags">${l.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : '<ul class="flags good"><li>Nothing to flag here.</li></ul>'}`).join('')}
+  ${r.good.length ? `<h3>Working well</h3><ul class="flags good">${r.good.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}</div>` : ''}`;
+}
+function fbAnalyze(t) {
+  const wc = words(t).length, sec = Math.round(wc / 130 * 60), low = ' ' + t.toLowerCase() + ' ';
+  const cut = [], sharpen = [], quant = [], good = [];
+  if (sec > 90) cut.push('About ' + sec + 's spoken. Cut roughly ' + Math.max(0, wc - 195) + ' words to land under 90s.');
+  const fills = FILLER.map(f => [f, (low.match(new RegExp('[^a-z]' + f + '[^a-z]', 'g')) || []).length]).filter(x => x[1] > 0);
+  if (fills.length) cut.push('Filler or hedging: ' + fills.map(x => '"' + x[0] + '" x' + x[1]).join(', ') + '.');
+  const sents = t.split(/(?<=[.!?])\s+/).filter(Boolean), long = sents.filter(s => words(s).length > 35);
+  if (long.length) cut.push(long.length + ' sentence(s) over 35 words. Split or shorten them.');
+  const cues = { Situation: /\b(when|while|at the time|during|in \d{4}|our (team|branch|company))\b/, Task: /\b(responsible|goal|objective|needed to|asked to|tasked|target)\b/, Action: /\b(I (led|built|created|designed|set up|proposed|analy[sz]ed|negotiated|organi[sz]ed|decided|developed|implemented|reviewed|trained)|I )/i, Result: /\b(result|reduced|increased|improved|saved|achieved|delivered|grew|resulted|%|percent)\b/i };
+  Object.entries(cues).forEach(([k, re]) => { if (!re.test(t)) sharpen.push('No clear ' + k + ' signal. Make that part of STAR explicit.'); });
+  const I = (t.match(/\bI\b/g) || []).length, we = (t.match(/\bwe\b/gi) || []).length;
+  if (we > I) sharpen.push('"We" appears ' + we + ' times vs "I" ' + I + '. Show what you personally did.');
+  if (!/\b(learn|lesson|next time|differently)\b/i.test(t) && /\b(fail|mistake|conflict|difficult)\b/i.test(t)) sharpen.push('For failure or conflict questions, end with what you learned or changed.');
+  const nums = (t.match(/\d[\d,.]*\s?(%|percent|lakh|crore|cr|k|days?|weeks?|months?|hours?)?/gi) || []);
+  if (!nums.length) quant.push('No numbers at all. Add scale, speed, money, accuracy or team size where true.');
+  else if (!/\d/.test(sents[sents.length - 1] || '')) quant.push('Your final sentence has no figure. End on a quantified result if you have one.');
+  if (/\b(significantly|greatly|a lot|many|several|improved|better)\b/i.test(t)) quant.push('Vague words (significantly, many, improved). Swap each for the actual number or comparison.');
+  if (nums.length) good.push(nums.length + ' figure(s) used.');
+  if (I >= we && I > 0) good.push('Clear first-person ownership.');
+  const r = analyze(); if (r) { const h = r.kws.filter(k => kwIn(k, t)); if (h.length) good.push('Role keywords present: ' + h.slice(0, 8).join(', ') + '.'); }
+  return { wc, sec, cut, sharpen, quant, good };
+}
+
+/* ---- QUESTIONS TO ASK ---- */
+const ASKS = {
+  'Role success': ['What would success look like in the first 90 days for this {role}?', 'What are the top priorities for this role over the next year?', 'What is the biggest challenge the person in this role will face?'],
+  'Team and manager': ['How is the team structured, and who would I work with most closely?', 'How would you describe your management style?', 'How does the team handle disagreements on priorities?'],
+  'Growth': ['What does the growth path look like from this {role}?', 'How do people at {company} usually build new skills here?', 'How is performance reviewed, and how often?'],
+  'Company direction': ['What are the most important goals for {company} this year?', 'How does this team contribute to those goals?', 'What changes do you expect in this area over the next two years?'],
+  'Closing': ['Is there anything about my background you would like me to clarify?', 'What are the next steps and expected timeline?']
+};
+function ask() {
+  const fill = q => q.replace(/\{role\}/g, S.jobTitle || 'role').replace(/\{company\}/g, S.company || 'the company');
+  const chosen = S.asks.map(fill);
+  const tip = { Panel: 'For a panel, direct one question to each interviewer by function.', Technical: 'For technical rounds, ask about the stack, code or review process and how decisions get made.', 'Case study': 'For case rounds, ask how the team measures the kind of outcome the case covers.', Behavioral: 'For behavioral rounds, ask about team culture and how success is measured.' }[S.profile.interview] || '';
+  return `<div class="card"><h2>Smart questions to ask the interviewer</h2><p class="sub">Pick 2-3. Job title and company fill in from the Target Role tab.</p>
+  ${tip ? `<div class="note info">${tip}</div>` : ''}
+  ${Object.entries(ASKS).map(([g, qs]) => `<h3>${g}</h3>${qs.map(q => `<div class="q"><input type="checkbox" data-act="askpick" data-id="${esc(q)}" ${S.asks.includes(q) ? 'checked' : ''}><div>${esc(fill(q))}</div></div>`).join('')}`).join('')}
+  ${S.asks.length > 3 ? '<div class="note warn">You have picked more than 3. Choose the best 2-3 so you do not run out of time.</div>' : ''}</div>
+  ${chosen.length ? `<div class="card"><h2>Your shortlist</h2><div class="out" id="asklist">${esc(chosen.map((q, i) => (i + 1) + '. ' + q).join('\n'))}</div>${copyBtn('asklist')}</div>` : ''}`;
+}
+
+/* ---- AI COACH (optional) ---- */
+const MODES = ['Analyze job description', 'Rewrite resume bullets for the role', 'Draft LinkedIn About summary', 'Build a STAR answer', 'Give feedback on my draft answer'];
+const SYS = `You are a Career Growth & Interview Coach. Tailor everything to the target role. Rules: base every output ONLY on the profile, achievements and text the user supplies; never invent projects, titles, employers or metrics; if detail is missing, ask clarifying questions instead of guessing. Resume bullets follow Action verb + what was done + measurable result. STAR answers fit 60-90 seconds spoken (about 130-195 words). Be concise, confident and professional, keyword-optimized for ATS where relevant. When analyzing a job description, list key skills/keywords and gaps versus the user's experience. Also suggest 2-3 smart questions to ask the interviewer when preparing interview material.`;
+function aiView() {
+  const A = S.ai;
+  return `<div class="card"><h2>AI Coach (optional)</h2><p class="sub">Everything else in this app works offline. This tab sends your profile, achievements and text to the Anthropic API using your own key, for fuller rewrites. The key stays in this browser only.</p>
+  ${inp('ai.key', 'Anthropic API key', 'sk-ant-...', 'password', 'autocomplete="off"')}
+  <label>Task</label><select data-k="ai.mode">${MODES.map(m => `<option ${A.mode === m ? 'selected' : ''}>${m}</option>`).join('')}</select>
+  ${ta('ai.input', 'Extra input (optional)', 'A draft answer, a question, or notes. The job description from Target Role is included automatically.', 6)}
+  <button class="btn" data-act="runAI" id="aibtn">Run</button>
+  ${A.out ? `<div class="out" id="aiout">${esc(A.out)}</div>${copyBtn('aiout')}` : ''}</div>`;
+}
+async function runAI() {
+  const A = S.ai; if (!A.key.trim()) { toast('Enter your API key first'); return; }
+  const btn = $('#aibtn'); btn.textContent = 'Working...'; btn.disabled = true;
+  const ctx = `MODE: ${A.mode}\n\nMY PROFILE:\n${JSON.stringify(S.profile, null, 1)}\n\nMY ACHIEVEMENT BANK:\n${S.ach.map(a => '- ' + bulletText(a)).join('\n') || '(empty)'}\n\nTARGET JOB (${S.jobTitle} at ${S.company}):\n${S.jd || '(none pasted)'}\n\nEXTRA INPUT:\n${A.input || '(none)'}`;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': A.key.trim(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-5-5', max_tokens: 2000, system: SYS, messages: [{ role: 'user', content: ctx }] })
+    });
+    const j = await res.json();
+    if (!res.ok) throw new Error((j.error && j.error.message) || res.status);
+    S.ai.out = (j.content || []).map(c => c.text || '').join('\n'); save();
+  } catch (e) { S.ai.out = 'Request failed: ' + e.message; save(); }
+  render();
+}
+
+/* ---- DATA ---- */
+function data() {
+  return `<div class="card"><h2>Backup &amp; reset</h2><p class="sub">Your data lives only in this browser. Export a backup file before clearing site data or switching devices.</p>
+  <button class="btn" data-act="export">Export backup (JSON)</button>
+  <button class="btn sec" data-act="importpick">Import backup</button><input type="file" id="imp" accept=".json,application/json" style="display:none">
+  <button class="btn red" data-act="wipe">Erase everything</button></div>`;
+}
+
+/* ============ EVENTS ============ */
+document.addEventListener('input', e => {
+  const k = e.target.dataset && e.target.dataset.k; if (!k) return;
+  setPath(k, e.target.value);
+  if (k.startsWith('profile.')) updateProfileMeter();
+  if (k.startsWith('star.') && k !== 'star.pre' && k !== 'star.q') updateStar();
+  if (k === 'star.q') { /* keep both q controls in sync lazily */ }
+  if (e.target.dataset.live === 'b') {
+    const t = { verb: S.draft.verb, what: S.draft.what, result: S.draft.result };
+    $('#bprev').innerHTML = (t.verb || t.what || t.result) ? '<h3>Preview</h3><div class="out">' + esc(bulletText(t)) + '</div>' : '';
+    $('#bflags').innerHTML = bulletFlags(t).map(x => `<li>${esc(x)}</li>`).join('');
+    $('#bflags').className = 'flags';
+  }
+  if (e.target.dataset.live === 'li') { const o = $('#licount'); render_li_soft(); }
+});
+function render_li_soft() {
+  const y = window.scrollY; const ae = document.activeElement, k = ae && ae.dataset ? ae.dataset.k : null, pos = ae && ae.selectionStart;
+  render();
+  if (k) { const n = document.querySelector('[data-k="' + k + '"]'); if (n) { n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {} } }
+  window.scrollTo(0, y);
+}
+document.addEventListener('change', e => {
+  if (e.target.dataset && e.target.dataset.k === 'star.q') { render(); }
+  if (e.target.id === 'imp') {
+    const f = e.target.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => { try { S = Object.assign(blank(), JSON.parse(rd.result)); save(); render(); toast('Backup imported'); } catch (x) { toast('Not a valid backup file'); } };
+    rd.readAsText(f);
+  }
+});
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const id = b.dataset.id, act = b.dataset.act;
+  switch (act) {
+    case 'tab': S.tab = id; save(); render(); window.scrollTo(0, 0); break;
+    case 'copy': { const el = document.getElementById(id); copyText(el.value || el.textContent); break; }
+    case 'analyze': if (!S.jd.trim()) toast('Paste a job description first'); render(); break;
+    case 'clearjd': S.jd = ''; S.jobTitle = ''; S.company = ''; save(); render(); break;
+    case 'saveAch': {
+      const d = S.draft;
+      if (!d.verb.trim() || !d.what.trim()) { toast('Add a verb and what you did'); break; }
+      if (d.id) { const a = S.ach.find(x => x.id === d.id); if (a) { a.verb = d.verb; a.what = d.what; a.result = d.result; } }
+      else S.ach.push({ id: 'a' + Date.now() + Math.floor(Math.random() * 1000), verb: d.verb, what: d.what, result: d.result });
+      S.draft = { id: '', verb: '', what: '', result: '' }; save(); render(); toast('Saved'); break;
+    }
+    case 'editAch': { const a = S.ach.find(x => x.id === id); if (a) { S.draft = { id: a.id, verb: a.verb, what: a.what, result: a.result }; save(); render(); window.scrollTo(0, 0); } break; }
+    case 'cancelEdit': S.draft = { id: '', verb: '', what: '', result: '' }; save(); render(); break;
+    case 'delAch': if (confirm('Delete this bullet?')) { S.ach = S.ach.filter(x => x.id !== id); S.li.picks = S.li.picks.filter(x => x !== id); save(); render(); } break;
+    case 'pick': { const p = S.li.picks; const i = p.indexOf(id); if (i > -1) p.splice(i, 1); else p.push(id); save(); render_li_soft(); break; }
+    case 'prefill': { const a = S.ach.find(x => x.id === S.star.pre); if (!a) { toast('Pick an achievement first'); break; } S.star.a = cap(a.verb) + ' ' + a.what; S.star.r = a.result; save(); render(); toast('Filled. Rewrite the Action in first person'); break; }
+    case 'saveAns': { const a = starAnalysis(); if (!a.full) { toast('Nothing to save'); break; } S.answers.push({ id: 'n' + Date.now(), q: S.star.q, s: S.star.s, t: S.star.t, a: S.star.a, r: S.star.r, words: a.wc, sec: a.sec }); save(); render(); toast('Saved'); break; }
+    case 'loadAns': { const a = S.answers.find(x => x.id === id); if (a) { S.star = Object.assign({}, S.star, { q: a.q, s: a.s, t: a.t, a: a.a, r: a.r }); save(); render(); window.scrollTo(0, 0); } break; }
+    case 'delAns': S.answers = S.answers.filter(x => x.id !== id); save(); render(); break;
+    case 'clearStar': S.star = { q: '', pre: '', s: '', t: '', a: '', r: '' }; save(); render(); break;
+    case 'runFb': if (!S.fb.text.trim()) toast('Paste a draft first'); render(); break;
+    case 'askpick': { const i = S.asks.indexOf(id); if (i > -1) S.asks.splice(i, 1); else S.asks.push(id); save(); render(); break; }
+    case 'runAI': runAI(); break;
+    case 'export': { const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'career-coach-backup.json'; document.body.appendChild(a); a.click(); a.remove(); break; }
+    case 'importpick': $('#imp').click(); break;
+    case 'wipe': if (confirm('Erase all profile data, bullets and answers on this device?')) { S = blank(); save(); render(); toast('Erased'); } break;
+  }
+});
+render();
+</script>
+</body>
+</html>
